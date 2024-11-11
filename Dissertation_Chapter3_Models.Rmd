@@ -1,0 +1,220 @@
+---
+title: "Dissertation Chapter 3 Statistical Analysis Models"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+```
+
+## Chapter 3 AD RELATED PATHOLOGY RELATES TO FUNCTIONAL BRAIN NETWORK ORGANIZATION
+
+```{r define covariates}
+# define covariates for cross-sectional analyses:
+# age, self-reported gender,education status, head motion (post-scrubbing FD)
+cross_cov = 'Age+Gender+Educ_Group+FD_postscrub'
+
+# define covariates for longitudinal analyses: 
+# age at baseline, self-reported gender,education status, head motion (post-scrubbing FD) at baseline
+long_cov = 'Age_bl+Gender+Educ_Group+FD_postscrub_bl'
+```
+
+All reported cross-sectional analyses controlled for the above cross-sectional analyses covariates. 
+All reported longitudinal analyses controlled for the above longitudinal analyses covariates.
+
+### 3.3.2. Aβ burden is not related to brain system segregation
+
+1) Examine the relationship between Centiloids and brain system segregation: 
+
+```{r model 3.3.2.1}
+# DV: whole-brain system segregation
+# IV: Centiloids
+mod3.3.2.1 <- paste('wb_seg ~ Centiloids',cross_cov,sep = "+") 
+
+ # perform multiple linear regression: 
+lm(formula = mod3.3.2.1,data = data, 
+   contrasts = list(Gender="contr.sum",Educ_Group=c(-1,1))) 
+```
+
+2)  Examine whether there exists a difference in brain system segregation across cortical Aβ groups (Aβ+ vs. Aβ-): 
+
+```{r model 3.3.2.2}
+# DV: whole-brain system segregation
+# IV: Aβ burden status (Aβ+ vs. Aβ-)
+
+mod3.3.2.2 <- paste('wb_seg ~ Amyloid_Group',cross_cov,sep = "+") 
+
+# Perform ANCOVA
+car::Anova(lm(formula = mod3.3.2.2,data = data,contrasts=
+              list(Amyloid_Group="contr.treatment",Gender = "contr.sum",Educ_Factor=c(-1,1))),type=3) # perform ANCOVA
+```
+
+### 3.3.3. Tau burden relates to brain system segregation
+
+1) Examine the relationship between meta-temporal tau and brain system segregation: 
+
+```{r model 3.3.3.1}
+# DV: whole-brain system segregation
+# IV: meta-temporal tau SUVR
+
+mod3.3.3.1 = paste('wb_seg ~ meta_temporal_suvr',cross_cov,sep = "+")
+
+#perform multiple linear regression
+lm(formula = mod3.3.3.1,data = data,contrasts = list(Gender = "contr.sum",Educ_Group=c(-1,1)))
+```
+
+2)  Examine whether there exists a difference in brain system segregation across tau groups (Tau+ vs. Tau-): 
+
+```{r model 3.3.3.2}
+# DV: whole-brain system segregation
+# IV: meta-temporal tau burden status (tau+ vs. tau-)
+
+mod3.3.3.2 = paste('wb_seg ~ Tau_Group',cross_cov,sep = "+") 
+
+# Perform ANCOVA
+car::Anova(lm(formula = mod3.3.3.2,data = data,contrasts=
+              list(Tau_Group="contr.treatment",Gender = "contr.sum",Educ_Factor=c(-1,1))),type=3)
+```
+
+3) Examine the combined effects of Aβ and tau burden on brain system segregation: 
+
+- Examine the interaction between Centiloids and meta-temporal tau uptake on whole-brain system segregation:
+
+```{r model 3.3.3.3}
+# DV: whole-brain system segregation
+# IV: the interaction between centiloids and meta-temporal tau burden
+
+mod3.3.3.3 = paste('wb_seg ~ Centiloids*meta_temporal_suvr',cross_cov,sep = "+")
+
+# perform multiple linear regression:
+lm(formula = mod3.3.3.3,data=data,contrasts = list(Gender = "contr.sum",Educ_Group=c(-1,1)))
+```
+
+- Examine the interaction between Centiloids, meta-temporal tau and age on whole-brain system segregation:
+
+```{r model 3.3.3.4}
+# DV: whole-brain system segregation
+# IV: the interaction between centiloids, meta-temporal tau burden and age
+# the covariates for this model specifically is gender,education status, and head motion
+
+mod3.3.3.4 = paste('wb_seg ~ centiloids*meta_temporal_suvr*Age',cross_cov,sep = "+")
+
+# perform multiple linear regression:
+lm(formula = mo3.3.3.4,data = data,contrasts = list(Gender = "contr.sum",Educ_Group=c(-1,1)))
+```
+
+- Examine whether there exists difference in brain system segregation between pathology groups:
+
+```{r model 3.3.3.5}
+# DV: whole-brain system segregation
+# IV: Pathology Status (Aβ-/tau-, Aβ+/tau-,Aβ+/tau+)
+
+model3.3.3.5 = paste('wb_seg ~ Patho_Group',cross_cov,sep = "+")  
+
+# perform ANCOVA 
+car::Anova(lm(formula = model3.3.3.5,data = data,contrasts=
+              list(Patho_Group="contr.treatment",Gender = "contr.sum",Educ_Factor=c(-1,1))),type=3)
+```
+
+4) Examine the interaction between tau burden and APOE4 status on brain system segregation:
+
+```{r model 3.3.3.6}
+# DV: whole-brain system segregation
+# IV: interaction between APOE4 status (APOE4+ vs. APOE4-) and meta-temporal tau SUVR
+
+mod3.3.3.6 = paste('wb_seg ~ APOE4_group*meta_temporal_suvr',cross_cov,sep = "+")
+
+lm(formula = mod3.3.3.6,data = data,contrasts = list(APOE4_group = "contr.sum",Gender = "contr.sum",Educ_Group=c(-1,1)))
+```
+
+### 3.3.4 Brain atrophy fully mediates the association between tau burden and brain system segregation
+
+Examine whether neurodegeneration (cortical thickness & hippocampal volume) mediate the relationship between tau and brain system segregation:
+
+```{r model 3.3.4.1}
+# DV: whole-brain system segregation
+# mediators: mean grey matter cortical thickness and mean hippocampal volume 
+
+mod3.3.4.1 = 'wb_seg ~ meta_temporal_suvr-Age-Gender-Educ_Group-FD_postscrub+(hippo_vol)+(wb_mean_thickness)'
+
+# perform mediation analysis
+psych::mediate(mod3.3.4.1, data =stats_df,n.iter=1000)
+```
+
+### 3.3.5 Changes in AD-related pathology are not associated with changes in brain system segregation over time
+
+1. Examine whether the change in amyloid is associated with change in brain system segregation over time: 
+
+1) Examine the interaction between change in Centiloids and time on brain system segregation:
+ 
+```{r model 3.3.5.1}
+# DV: whole-brain system segregation
+# IV: interaction between change in centiloids (i.e.,delta_centiloids) and time (normalized to baseline)
+
+mod3.3.5.1 = paste('wb_seg ~ delta_centiloids*time',long_cov,"(1|Subject_ID)",sep = "+")
+
+# perform linear-mixed effect regression
+lmer(formula = model1.8,data = data,contrasts=list(Gender = "contr.sum",Educ_Group=c(-1,1)))
+```
+
+2) Examine the interaction between change in Centiloids, time and baseline on brain system segregation:
+
+```{r model 3.3.5.2}
+# DV: whole-brain system segregation
+# IV: interaction between age at baseline, change in centiloids (i.e.,delta_centiloids) and time (normalized to baseline)
+# the covariates for this model specifically is gender,education status, and head motion at baseline
+
+mod3.3.5.2 = paste('wb_seg ~ age_bl*delta_centiloids*time',long_cov,"(1|Subject_ID)",sep = "+")
+
+# perform linear-mixed effect regression
+lmer(formula = mod3.3.5.2,data = data,contrasts=list(Gender = "contr.sum",Educ_Group=c(-1,1)))
+
+```
+
+2. Examine whether the change in tau burden is associated with change in brain system segregation over time: 
+
+1) Examine the interaction between change in meta-temporal tau and time on brain system segregation:
+ 
+```{r model 3.3.5.3}
+# DV: whole-brain system segregation
+# IV: interaction between change in meta-temporal tau burden (i.e.,delta_meta_temporal_suvr) and time (normalized to baseline)
+
+mod3.3.5.3 = paste('wb_seg ~ delta_meta_temporal_suvr*time',long_cov,"(1|Subject_ID)",sep = "+")
+
+# perform linear-mixed effect regression
+lmer(formula = mod3.3.5.3,data = data,contrasts=list(Gender = "contr.sum",Educ_Group=c(-1,1)))
+```
+
+2) Examine the interaction between change in meta-temporal tau, time and baseline age on brain system segregation:
+
+```{r model 3.3.5.4}
+# DV: whole-brain system segregation
+# IV: interaction between change in meta-temporal tau burden (i.e.,delta_meta_temporal_suvr), time (normalized to baseline) and age at baseline
+
+mod3.3.5.4 = paste('wb_seg ~ delta_meta_temporal_suvr*time*Age_bl',long_cov,"(1|Subject_ID)",sep = "+")
+
+# perform linear-mixed effect regression
+lmer(formula = mod3.3.5.4,data = data,contrasts=list(Gender = "contr.sum",Educ_Group=c(-1,1)))
+
+```
+
+
+3) Examine whether the interaction between change in amyloid and change in tau burden is associated with change in brain system segregation:
+
+```{r model 3.3.5.5}
+# DV: whole-brain system segregation
+# IV: interaction between change in meta-temporal tau burden (delta_meta_temporal_suvr), change in centiloids (delta_centiloids) and time (normalized to baseline)
+
+mod3.3.5.5 = paste('wb_seg ~ delta_meta_temporal_suvr*delta_centiloids*time',long_cov,"(1|Subject_ID)",sep = "+")
+
+# perform linear-mixed effect regression
+lmer(formula = mod3.3.5.5,data = data,contrasts=list(Gender = "contr.sum",Educ_Group=c(-1,1)))
+
+```
+
+
+
+
